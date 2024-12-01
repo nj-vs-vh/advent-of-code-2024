@@ -13,6 +13,4 @@ def part_2(inp: str, debug: bool):
     first = arr[:, 0]
     second = arr[:, 1]
     second_counts = collections.Counter(second)
-    print(sum(
-        f * second_counts.get(f, 0) for f in first
-    ))
+    print(sum(f * second_counts.get(f, 0) for f in first))
