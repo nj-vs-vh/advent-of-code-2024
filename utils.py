@@ -37,3 +37,41 @@ class Map2D(Generic[T]):
         for i, row in enumerate(self.content):
             for j, cell in enumerate(row):
                 yield i, j, cell
+
+    def format(
+        self,
+        formatter: Callable[[T], str] = lambda t: str(t) if t is not None else " ",
+        cell_width: int | None = None,
+        rulers_each: int | None = None,
+    ) -> str:
+        # formatting
+        str_map = [[formatter(cell) for cell in row] for row in self.content]
+        # aligning all cells
+        target_len = cell_width or max(max(len(s) for s in row) for row in str_map)
+        str_map = [[s.center(target_len, " ") for s in row] for row in str_map]
+        # inserting rulers
+        ruler_cols: set[int] = set()
+        if rulers_each is not None:
+            for i_ruler in range(1, 1 + self.width // rulers_each):
+                for row in str_map:
+                    idx = i_ruler - 1 + i_ruler * rulers_each
+                    if idx < len(row):
+                        ruler_cols.add(idx)
+                        row.insert(idx, "┆")
+        top_bound_chars = ["┌"]
+        bot_bound_chars = ["└"]
+        horiz_ruler_chars = ["├"]
+        for i in range(len(str_map[0])):
+            top_bound_chars.append("─" * target_len if i not in ruler_cols else "┬")
+            bot_bound_chars.append("─" * target_len if i not in ruler_cols else "┴")
+            horiz_ruler_chars.append("┄" * target_len if i not in ruler_cols else "┼")
+        top_bound_chars.append("┐")
+        bot_bound_chars.append("┘")
+        horiz_ruler_chars.append("┤")
+        lines: list[str] = ["".join(top_bound_chars)]
+        for i_row, row in enumerate(str_map):
+            lines.append("".join(["│"] + row + ["│"]))
+            if i_row != len(str_map) - 1 and rulers_each and (i_row + 1) % rulers_each == 0:
+                lines.append("".join(horiz_ruler_chars))
+        lines.append("".join(bot_bound_chars))
+        return "\n".join(lines)
