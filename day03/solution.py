@@ -1,8 +1,8 @@
-
 import re
 
 
 mul_regex = re.compile(r"mul\((\d+),(\d+)\)")
+
 
 def part_1(inp: str, debug: bool):
     sum = 0
