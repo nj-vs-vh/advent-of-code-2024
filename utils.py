@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 from typing import Callable, Generic, TypeVar, cast
 from collections.abc import Generator
@@ -19,8 +20,16 @@ class Map2D(Generic[T]):
         else:
             return None
 
+    def set(self, i: int, j: int, el: T) -> None:
+        if 0 <= i < self.height and 0 <= j < self.width:
+            self.content[i][j] = el
+
+    def update(self, i: int, j: int, updater: Callable[[T], T]) -> None:
+        if 0 <= i < self.height and 0 <= j < self.width:
+            self.content[i][j] = updater(self.content[i][j])
+
     @classmethod
-    def parse(cls, inp: str, char_parser: Callable[[str], T] | None = None) -> "Map2D":
+    def parse[T](cls, inp: str, char_parser: Callable[[str], T] | None = None) -> "Map2D[T]":
         content = [
             [
                 (
@@ -32,6 +41,10 @@ class Map2D(Generic[T]):
         ]
         assert len({len(row) for row in content}) == 1, "Non-rectangular map!"
         return Map2D(content)
+
+    @classmethod
+    def filled[T](cls, width: int, height: int, element: T) -> "Map2D[T]":
+        return Map2D([[copy.deepcopy(element) for _ in range(width)] for _ in range(height)])
 
     def iter_cells(self) -> Generator[tuple[int, int, T], None, None]:
         for i, row in enumerate(self.content):
