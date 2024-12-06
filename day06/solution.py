@@ -62,7 +62,6 @@ def trace_path(
     recurse: bool,
 ) -> int:
     initial_pos = pos
-    added_obstruction_positions: set[tuple[int, int]] = set()
 
     directions_been.update(*pos, lambda d: d | direction)
 
@@ -72,8 +71,6 @@ def trace_path(
         next_pos = (pos[0] + delta[0], pos[1] + delta[1])
         next_obstacle = obstacle_map.at(*next_pos)
         if next_obstacle is None:
-            if added_obstruction_positions:
-                print(len(added_obstruction_positions))
             return cycles
         elif next_obstacle is True:
             direction = TURN_RIGHT[direction]
@@ -82,20 +79,16 @@ def trace_path(
             if (
                 recurse
                 and next_pos != initial_pos
-                and next_pos not in added_obstruction_positions
                 and directions_been.at(*next_pos) == 0
             ):
                 # what if next_pos was an obstacle?
-                cycles_added = trace_path(
+                cycles += trace_path(
                     obstacle_map,
                     pos,
                     direction=TURN_RIGHT[direction],
                     directions_been=copy.deepcopy(directions_been),
                     recurse=False,
                 )
-                if cycles_added:
-                    cycles += cycles_added
-                    added_obstruction_positions.add(next_pos)
             obstacle_map.set(*next_pos, False)
 
             pos = next_pos
