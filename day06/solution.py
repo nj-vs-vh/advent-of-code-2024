@@ -76,11 +76,7 @@ def trace_path(
             direction = TURN_RIGHT[direction]
         else:
             obstacle_map.set(*next_pos, True)
-            if (
-                recurse
-                and next_pos != initial_pos
-                and directions_been.at(*next_pos) == 0
-            ):
+            if recurse and next_pos != initial_pos and directions_been.at(*next_pos) == 0:
                 # what if next_pos was an obstacle?
                 cycles += trace_path(
                     obstacle_map,

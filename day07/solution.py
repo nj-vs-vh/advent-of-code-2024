@@ -4,6 +4,7 @@ from typing import Callable
 
 Operator = Callable[[int, int], int]
 
+
 def calibration_result(line: str, operators: list[Operator]) -> int:
     target, nums = line.split(":")
     target = int(target)
