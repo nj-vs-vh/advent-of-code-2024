@@ -4,6 +4,7 @@ from typing import Callable, Generic, TypeVar, cast
 from collections.abc import Generator
 
 T = TypeVar("T")
+T2 = TypeVar("T2")
 
 
 @dataclass
@@ -14,18 +15,21 @@ class Map2D(Generic[T]):
         self.height = len(self.content)
         self.width = len(self.content[0]) if self.content else 0
 
+    def is_inside(self, i: int, j: int) -> bool:
+        return 0 <= i < self.height and 0 <= j < self.width
+
     def at(self, i: int, j: int) -> T | None:
-        if 0 <= i < self.height and 0 <= j < self.width:
+        if self.is_inside(i, j):
             return self.content[i][j]
         else:
             return None
 
     def set(self, i: int, j: int, el: T) -> None:
-        if 0 <= i < self.height and 0 <= j < self.width:
+        if self.is_inside(i, j):
             self.content[i][j] = el
 
     def update(self, i: int, j: int, updater: Callable[[T], T]) -> None:
-        if 0 <= i < self.height and 0 <= j < self.width:
+        if self.is_inside(i, j):
             self.content[i][j] = updater(self.content[i][j])
 
     @classmethod
@@ -45,6 +49,10 @@ class Map2D(Generic[T]):
     @classmethod
     def filled[T](cls, width: int, height: int, element: T) -> "Map2D[T]":
         return Map2D([[copy.deepcopy(element) for _ in range(width)] for _ in range(height)])
+
+    @classmethod
+    def filled_like[T](cls, other: "Map2D", element: T) -> "Map2D[T]":
+        return cls.filled(width=other.width, height=other.height, element=element)
 
     def iter_cells(self) -> Generator[tuple[int, int, T], None, None]:
         for i, row in enumerate(self.content):
@@ -88,3 +96,6 @@ class Map2D(Generic[T]):
                 lines.append("".join(horiz_ruler_chars))
         lines.append("".join(bot_bound_chars))
         return "\n".join(lines)
+
+    def transform[T2](self, transformer: Callable[[T], T2]) -> "Map2D[T2]":
+        return Map2D(content=[[transformer(el) for el in row] for row in self.content])
