@@ -99,3 +99,13 @@ class Map2D(Generic[T]):
 
     def transform[T2](self, transformer: Callable[[T], T2]) -> "Map2D[T2]":
         return Map2D(content=[[transformer(el) for el in row] for row in self.content])
+
+
+def manhattan_steps_cw(i: int, j: int) -> Generator[tuple[int, int], None, None]:
+    for di, dj in (
+        (-1, 0),
+        (0, 1),
+        (1, 0),
+        (0, -1),
+    ):
+        yield i + di, j + dj
