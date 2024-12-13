@@ -51,9 +51,7 @@ def count_tokens(machines: list[Machine]) -> int:
         )
         # NOTE: will fail on colinear b1 and b2, but they're not in the input
         components = np.linalg.inv(emat) @ np.array([m.prize * m.b1, m.prize * m.b2]).T
-        press_1, press_2 = components
-        press_1 = round(press_1)
-        press_2 = round(press_2)
+        press_1, press_2 = round(components[0]), round(components[1])
         if m.prize == press_1 * m.b1 + press_2 * m.b2:
             total += press_1 * 3 + press_2
     return total
