@@ -1,6 +1,7 @@
 import copy
+import math
 from dataclasses import dataclass
-from typing import Callable, Generic, TypeVar, cast
+from typing import Callable, Generic, Literal, TypeVar, cast, overload
 from collections.abc import Generator
 
 T = TypeVar("T")
@@ -109,3 +110,63 @@ def manhattan_steps_cw(i: int, j: int) -> Generator[tuple[int, int], None, None]
         (0, -1),
     ):
         yield i + di, j + dj
+
+
+class IntVec2D(tuple[int]):
+    """Copy of Vec2D from turtle module, modified to work with integers"""
+
+    def __new__(cls, x: int, y: int):
+        return tuple.__new__(cls, (x, y))
+
+    def __add__(self, other: "IntVec2D") -> "IntVec2D":
+        return IntVec2D(self[0] + other[0], self[1] + other[1])
+
+    @overload
+    def __mul__(self, other: "IntVec2D") -> int:
+        pass
+
+    @overload
+    def __mul__(self, other: int) -> "IntVec2D":
+        pass
+
+    def __mul__(self, other: "IntVec2D | int"):
+        if isinstance(other, IntVec2D):
+            return self[0] * other[0] + self[1] * other[1]
+        return IntVec2D(self[0] * other, self[1] * other)
+
+    def __rmul__(self, other):
+        if isinstance(other, int):
+            return IntVec2D(self[0] * other, self[1] * other)
+        return NotImplemented
+
+    def __sub__(self, other: "IntVec2D") -> "IntVec2D":
+        return IntVec2D(self[0] - other[0], self[1] - other[1])
+
+    def __neg__(self) -> "IntVec2D":
+        return IntVec2D(-self[0], -self[1])
+
+    def __abs__(self) -> float:
+        return math.hypot(*self)
+
+    def rotate_90_ccw(self) -> "IntVec2D":
+        return IntVec2D(-self[1], self[0])
+
+    def rotate_ccw(self, angle: int) -> "IntVec2D":
+        """Angle is in units of pi/2 = 90 degrees"""
+        match angle:
+            case 0:
+                return self
+            case 1:
+                return self.rotate_90_ccw()
+            case 2:
+                return IntVec2D(-self[0], -self[1])
+            case 3:
+                return self.rotate(2).rotate(1)
+            case other:
+                return self.rotate_90_ccw(other % 4)
+
+    def __getnewargs__(self):
+        return (self[0], self[1])
+
+    def __repr__(self) -> str:
+        return f"({self[0]}, {self[1]})"
