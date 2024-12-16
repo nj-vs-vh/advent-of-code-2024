@@ -1,4 +1,5 @@
 import copy
+import inspect
 import math
 from dataclasses import dataclass
 from typing import Callable, Generic, Literal, TypeVar, cast, overload
@@ -62,12 +63,24 @@ class Map2D(Generic[T]):
 
     def format(
         self,
-        formatter: Callable[[T], str] = lambda t: str(t) if t is not None else " ",
+        formatter: Callable[[T], str] | Callable[[T, tuple[int, int]], str] = lambda t: (
+            str(t) if t is not None else " "
+        ),
         cell_width: int | None = None,
         rulers_each: int | None = None,
     ) -> str:
+
+        def formatter_wrap(el: T, pos: tuple[int, int]) -> str:
+            if len(inspect.signature(formatter).parameters) == 1:
+                return formatter(el)
+            else:
+                return formatter(el, pos)
+
         # formatting
-        str_map = [[formatter(cell) for cell in row] for row in self.content]
+        str_map = [
+            [formatter_wrap(cell, (i, j)) for j, cell in enumerate(row)]
+            for i, row in enumerate(self.content)
+        ]
         # aligning all cells
         target_len = cell_width or max(max(len(s) for s in row) for row in str_map)
         str_map = [[s.center(target_len, " ") for s in row] for row in str_map]
