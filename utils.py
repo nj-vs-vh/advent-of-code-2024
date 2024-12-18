@@ -5,7 +5,7 @@ import inspect
 import math
 from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Callable, Generic, Literal, TypeVar, cast, overload
+from typing import Callable, Generic, TypeVar, cast, overload
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
