@@ -207,41 +207,41 @@ class DijkstraPriorityQueue(Generic[StateT]):
     """Simple list-based priority queue"""
 
     def __init__(self, initial_state: StateT | None = None, backtrack: bool = False) -> None:
-        self._queue: list[PathfindingNode[StateT]] = []
+        self.queue: list[PathfindingNode[StateT]] = []
         if initial_state is not None:
-            self._queue.append(PathfindingNode(distance=0, state=initial_state))
-        self._visited: set[StateT] = set()
+            self.queue.append(PathfindingNode(distance=0, state=initial_state))
+        self.visited: set[StateT] = set()
         self._backtrack = backtrack
-        self._lead_to: dict[StateT, set[StateT]] = dict()
-        self._current: PathfindingNode[StateT] | None = initial_state
+        self.lead_to: dict[StateT, set[StateT]] = dict()
+        self.current: PathfindingNode[StateT] | None = initial_state
 
     def empty(self) -> bool:
-        return not self._queue
+        return not self.queue
 
     def visit_next(self) -> PathfindingNode[StateT]:
-        self._queue.sort(key=lambda dn: dn.distance)
-        current = self._queue.pop(0)
-        self._visited.add(current.state)
-        self._current = current
+        self.queue.sort(key=lambda dn: dn.distance)
+        current = self.queue.pop(0)
+        self.visited.add(current.state)
+        self.current = current
         return current
 
     def new_candidate(self, candidate: PathfindingNode[StateT]) -> None:
-        if candidate.state in self._visited:
+        if candidate.state in self.visited:
             return
-        for node in self._queue:
+        for node in self.queue:
             if node.state == candidate.state:
                 if candidate.distance < node.distance:
                     node.distance = candidate.distance
                     if self._backtrack:
-                        self._lead_to[candidate.state] = {self._current.state}
+                        self.lead_to[candidate.state] = {self.current.state}
                 elif candidate.distance == node.distance:
                     if self._backtrack:
-                        self._lead_to[candidate.state].add(self._current.state)
+                        self.lead_to[candidate.state].add(self.current.state)
                 break
         else:
             if self._backtrack:
-                self._lead_to[candidate.state] = {self._current.state}
-            self._queue.append(candidate)
+                self.lead_to[candidate.state] = {self.current.state}
+            self.queue.append(candidate)
 
     def backtracking_steps(self, *from_: StateT) -> Generator[set[StateT], None, None]:
         states: set[StateT] = set(from_)
@@ -249,5 +249,5 @@ class DijkstraPriorityQueue(Generic[StateT]):
             yield states
             new_states = set()
             for s in states:
-                new_states.update(self._lead_to.get(s, set()))
+                new_states.update(self.lead_to.get(s, set()))
             states = new_states

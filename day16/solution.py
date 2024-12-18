@@ -88,9 +88,9 @@ def part_2(inp: str, debug: bool):
     def fmt(ch: str, pos: tuple[int, int]) -> str:
         if pos in bt_tiles:
             return "O"
-        if any(s.r == pos for s in pq._visited):
+        if any(s.r == pos for s in pq.visited):
             return "v"
-        elif any(el.state.r == pos for el in pq._queue):
+        elif any(el.state.r == pos for el in pq.queue):
             return "+"
         elif ch == ".":
             return " "
