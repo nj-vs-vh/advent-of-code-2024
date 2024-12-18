@@ -2,7 +2,7 @@ import collections
 import queue
 from re import I
 from time import sleep
-from utils import IntVec2D, Map2D
+from utils import PathfindingNode, DijkstraPriorityQueue, IntVec2D, Map2D
 from dataclasses import dataclass, field
 
 
@@ -24,10 +24,28 @@ class State:
     dir: int
 
 
-@dataclass
-class Node:
-    distance: int
-    state: State
+def node_candidates(
+    current: PathfindingNode[State],
+    map: Map2D[str],
+) -> list[PathfindingNode[State]]:
+    res: list[PathfindingNode] = [
+        PathfindingNode(
+            distance=current.distance + 1000,
+            state=State(
+                r=current.state.r,
+                dir=(current.state.dir + dir_delta) % 4,
+            ),
+        )
+        for dir_delta in (-1, 1)
+    ]
+    next_r = current.state.r + delta[current.state.dir]
+    if map.at(*next_r) in {".", "E"}:
+        res.append(
+            PathfindingNode(
+                distance=current.distance + 1, state=State(r=next_r, dir=current.state.dir)
+            )
+        )
+    return res
 
 
 def part_1(inp: str, debug: bool):
@@ -35,42 +53,15 @@ def part_1(inp: str, debug: bool):
     start_cell = map.first_where(lambda ch: ch == "S")
     assert start_cell != None
 
-    pq = [Node(distance=0, state=State(start_cell, E))]
-    visited: set[State] = set()
-    while pq:
-        current = pq.pop(0)
-        visited.add(current.state)
+    pq = DijkstraPriorityQueue(initial_state=State(start_cell, E))
+    while not pq.empty():
+        current = pq.visit_next()
         if map.at(*current.state.r) == "E":
             print(current.distance)
             return
 
-        new_node_candidates: list[Node] = [
-            Node(
-                distance=current.distance + 1000,
-                state=State(
-                    r=current.state.r,
-                    dir=(current.state.dir + dir_delta) % 4,
-                ),
-            )
-            for dir_delta in (-1, 1)
-        ]
-        next_r = current.state.r + delta[current.state.dir]
-        if map.at(*next_r) in {".", "E"}:
-            new_node_candidates.append(
-                Node(distance=current.distance + 1, state=State(r=next_r, dir=current.state.dir))
-            )
-
-        for new_node in new_node_candidates:
-            if new_node.state in visited:
-                continue
-            for node in pq:
-                if node.state == new_node.state:
-                    if node.distance > new_node.distance:
-                        node.distance = new_node.distance
-                    break
-            else:
-                pq.append(new_node)
-        pq.sort(key=lambda n: n.distance)
+        for cand in node_candidates(current, map):
+            pq.new_candidate(cand)
 
 
 def part_2(inp: str, debug: bool):
@@ -80,64 +71,26 @@ def part_2(inp: str, debug: bool):
     end = map.first_where(lambda ch: ch == "E")
     assert end is not None
 
-    pq = [Node(distance=0, state=State(start, E))]
-    visited: set[State] = set()
-    lead_to: dict[State, set[State]] = collections.defaultdict(set)
-    while pq:
-        current = pq.pop(0)
-        visited.add(current.state)
+    pq = DijkstraPriorityQueue(initial_state=State(start, E), backtrack=True)
+    while not pq.empty():
+        current = pq.visit_next()
         if map.at(*current.state.r) == "E":
             break
 
-        new_node_candidates: list[Node] = [
-            Node(
-                distance=current.distance + 1000,
-                state=State(
-                    r=current.state.r,
-                    dir=(current.state.dir + dir_delta) % 4,
-                ),
-            )
-            for dir_delta in (-1, 1)
-        ]
-        next_r = current.state.r + delta[current.state.dir]
-        if map.at(*next_r) in {".", "E"}:
-            new_node_candidates.append(
-                Node(distance=current.distance + 1, state=State(r=next_r, dir=current.state.dir))
-            )
-
-        for new_node in new_node_candidates:
-            if new_node.state in visited:
-                continue
-            for node in pq:
-                if node.state == new_node.state:
-                    if new_node.distance < node.distance:
-                        node.distance = new_node.distance
-                        lead_to[new_node.state] = {current.state}
-                    elif new_node.distance == node.distance:
-                        lead_to[new_node.state].add(current.state)
-                    break
-            else:
-                lead_to[new_node.state] = {current.state}
-                pq.append(new_node)
-        pq.sort(key=lambda n: n.distance)
-
+        for cand in node_candidates(current, map):
+            pq.new_candidate(cand)
     # print(map.format(fmt))
 
     bt_tiles = set[IntVec2D]()
-    bt_states: set[State] = {State(r=end, dir=d) for d in delta.keys()}
-    while bt_states:
+    for bt_states in pq.backtracking_steps(*(State(r=end, dir=d) for d in delta.keys())):
         bt_tiles.update(s.r for s in bt_states)
-        new_bt_states = set()
-        for s in bt_states:
-            new_bt_states.update(lead_to.get(s, set()))
-        bt_states = new_bt_states
 
     def fmt(ch: str, pos: tuple[int, int]) -> str:
         if pos in bt_tiles:
             return "O"
-        if any(s.r == pos for s in visited):
+        if any(s.r == pos for s in pq._visited):
             return "v"
-        elif any(el.state.r == pos for el in pq):
+        elif any(el.state.r == pos for el in pq._queue):
             return "+"
         elif ch == ".":
             return " "

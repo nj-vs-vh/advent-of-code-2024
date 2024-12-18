@@ -1,9 +1,11 @@
+import collections
+import collections.abc
 import copy
 import inspect
 import math
+from collections.abc import Generator
 from dataclasses import dataclass
 from typing import Callable, Generic, Literal, TypeVar, cast, overload
-from collections.abc import Generator
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
@@ -190,3 +192,62 @@ class IntVec2D(tuple[int, int]):
 
     def __repr__(self) -> str:
         return f"({self[0]}, {self[1]})"
+
+
+StateT = TypeVar("StateT", bound=collections.abc.Hashable)
+
+
+@dataclass
+class PathfindingNode(Generic[StateT]):
+    distance: int
+    state: StateT
+
+
+class DijkstraPriorityQueue(Generic[StateT]):
+    """Simple list-based priority queue"""
+
+    def __init__(self, initial_state: StateT | None = None, backtrack: bool = False) -> None:
+        self._queue: list[PathfindingNode[StateT]] = []
+        if initial_state is not None:
+            self._queue.append(PathfindingNode(distance=0, state=initial_state))
+        self._visited: set[StateT] = set()
+        self._backtrack = backtrack
+        self._lead_to: dict[StateT, set[StateT]] = dict()
+        self._current: PathfindingNode[StateT] | None = initial_state
+
+    def empty(self) -> bool:
+        return not self._queue
+
+    def visit_next(self) -> PathfindingNode[StateT]:
+        self._queue.sort(key=lambda dn: dn.distance)
+        current = self._queue.pop(0)
+        self._visited.add(current.state)
+        self._current = current
+        return current
+
+    def new_candidate(self, candidate: PathfindingNode[StateT]) -> None:
+        if candidate.state in self._visited:
+            return
+        for node in self._queue:
+            if node.state == candidate.state:
+                if candidate.distance < node.distance:
+                    node.distance = candidate.distance
+                    if self._backtrack:
+                        self._lead_to[candidate.state] = {self._current.state}
+                elif candidate.distance == node.distance:
+                    if self._backtrack:
+                        self._lead_to[candidate.state].add(self._current.state)
+                break
+        else:
+            if self._backtrack:
+                self._lead_to[candidate.state] = {self._current.state}
+            self._queue.append(candidate)
+
+    def backtracking_steps(self, *from_: StateT) -> Generator[set[StateT], None, None]:
+        states: set[StateT] = set(from_)
+        while states:
+            yield states
+            new_states = set()
+            for s in states:
+                new_states.update(self._lead_to.get(s, set()))
+            states = new_states
