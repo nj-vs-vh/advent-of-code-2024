@@ -74,9 +74,9 @@ class Map2D(Generic[T]):
 
         def formatter_wrap(el: T, pos: tuple[int, int]) -> str:
             if len(inspect.signature(formatter).parameters) == 1:
-                return formatter(el)
+                return formatter(el)  # type: ignore
             else:
-                return formatter(el, pos)
+                return formatter(el, pos)  # type: ignore
 
         # formatting
         str_map = [
@@ -116,12 +116,11 @@ class Map2D(Generic[T]):
     def transform[T2](self, transformer: Callable[[T], T2]) -> "Map2D[T2]":
         return Map2D(content=[[transformer(el) for el in row] for row in self.content])
 
-    def first_where(self, predicate: Callable[[T], bool]) -> "IntVec2D | None":
+    def first_where(self, predicate: Callable[[T], bool]) -> "IntVec2D":
         for i, j, el in self.iter_cells():
             if predicate(el):
                 return IntVec2D(i, j)
-        else:
-            return None
+        raise ValueError("Not found")
 
 
 def manhattan_steps_cw(i: int, j: int) -> Generator[tuple[int, int], None, None]:
@@ -140,10 +139,10 @@ class IntVec2D(tuple[int, int]):
     def __new__(cls, x: int, y: int):
         return tuple.__new__(cls, (x, y))
 
-    def __add__(self, other: "IntVec2D") -> "IntVec2D":
+    def __add__(self, other: "IntVec2D") -> "IntVec2D":  # type: ignore
         return IntVec2D(self[0] + other[0], self[1] + other[1])
 
-    @overload
+    @overload  # type: ignore
     def __mul__(self, other: "IntVec2D") -> int:
         pass
 
@@ -183,9 +182,9 @@ class IntVec2D(tuple[int, int]):
             case 2:
                 return IntVec2D(-self[0], -self[1])
             case 3:
-                return self.rotate(2).rotate(1)
+                return self.rotate_ccw(2).rotate_ccw(1)
             case other:
-                return self.rotate_90_ccw(other % 4)
+                return self.rotate_ccw(other % 4)
 
     def __getnewargs__(self):
         return (self[0], self[1])
@@ -206,14 +205,13 @@ class PathfindingNode(Generic[StateT]):
 class DijkstraPriorityQueue(Generic[StateT]):
     """Simple list-based priority queue"""
 
-    def __init__(self, initial_state: StateT | None = None, backtrack: bool = False) -> None:
+    def __init__(self, initial_state: StateT, backtrack: bool = False) -> None:
         self.queue: list[PathfindingNode[StateT]] = []
-        if initial_state is not None:
-            self.queue.append(PathfindingNode(distance=0, state=initial_state))
+        self.queue.append(PathfindingNode(distance=0, state=initial_state))
         self.visited: set[StateT] = set()
         self._backtrack = backtrack
         self.lead_to: dict[StateT, set[StateT]] = dict()
-        self.current: PathfindingNode[StateT] | None = initial_state
+        self.current = PathfindingNode(distance=0, state=initial_state)
 
     def empty(self) -> bool:
         return not self.queue
@@ -251,3 +249,12 @@ class DijkstraPriorityQueue(Generic[StateT]):
             for s in states:
                 new_states.update(self.lead_to.get(s, set()))
             states = new_states
+
+
+def manhattan_neighborhood(
+    r: int, center: tuple[int, int]
+) -> Generator[tuple[IntVec2D, int], None, None]:
+    for di in range(-r, r + 1):
+        width = r - abs(di)
+        for dj in range(-width, width + 1):
+            yield IntVec2D(center[0] + di, center[1] + dj), abs(di) + abs(dj)
