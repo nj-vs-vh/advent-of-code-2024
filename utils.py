@@ -2,10 +2,11 @@ import collections
 import collections.abc
 import copy
 import inspect
+import itertools
 import math
 from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Callable, Generic, TypeVar, cast, overload
+from typing import Callable, Generic, Iterable, TypeVar, cast, overload
 
 T = TypeVar("T")
 T2 = TypeVar("T2")
@@ -258,3 +259,13 @@ def manhattan_neighborhood(
         width = r - abs(di)
         for dj in range(-width, width + 1):
             yield IntVec2D(center[0] + di, center[1] + dj), abs(di) + abs(dj)
+
+
+def sliding_window(iterable: Iterable[T], n: int) -> Generator[tuple[T, ...], None, None]:
+    "Collect data into overlapping fixed-length chunks or blocks."
+    # sliding_window('ABCDEFG', 4) → ABCD BCDE CDEF DEFG
+    iterator = iter(iterable)
+    window = collections.deque(itertools.islice(iterator, n - 1), maxlen=n)
+    for x in iterator:
+        window.append(x)
+        yield tuple(window)
