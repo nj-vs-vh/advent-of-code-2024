@@ -218,7 +218,7 @@ def part_2(inp: str, debug: bool):
     adder_ops = make_adder_operations(n_bits=PLOT_FIRST_BITS)
     adder_g = make_dependency_graph(adder_ops)
     rename_to_match(g, adder_g)
-    plot_topological(adder_g, "summer.png")
+    # plot_topological(adder_g, "summer.png")
 
     not_relabeled = {node for node in adder_g.nodes if node.startswith("_")}
     if not_relabeled:
@@ -241,9 +241,9 @@ def part_2(inp: str, debug: bool):
             subgraph_nodes.update(nx.ancestors(g, out_bit))
         return g.subgraph(subgraph_nodes)
 
-    plot_topological(
-        out_bit_subgraph(PLOT_FIRST_BITS, inclusive=True), filename="alleged_summer.png"
-    )
+    # plot_topological(
+    #     out_bit_subgraph(PLOT_FIRST_BITS, inclusive=True), filename="alleged_summer.png"
+    # )
 
     def in_bit_subgraph(bit: int) -> nx.DiGraph:
         subgraph_nodes: set[str] = set()
